@@ -1,14 +1,3 @@
-package myapp
-
-import (
-	"io/ioutil"
-	"net/http"
-	"net/http/httptest"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-)
-
 /*
 설치방법
 
@@ -43,6 +32,18 @@ D:\workspace\GO\tuckersGo\goWeb\web03>go get github.com/stretchr/testify/assert
 D:\workspace\GO\tuckersGo\goWeb\web03>
 
 */
+package myapp
+
+import (
+	"encoding/json"
+	"github.com/stretchr/testify/assert"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+)
+
 func TestIndexPathHandler(t *testing.T) {
 	assert := assert.New(t)
 	res := httptest.NewRecorder()
@@ -88,17 +89,33 @@ func TestBarPathHandler_WithName(t *testing.T) {
 
 }
 
-// func TestFooPathHandler_WithoutJson(t *testing.T) {
-// 	assert := assert.New(t)
-// 	res := httptest.NewRecorder()
-// 	req := httptest.NewRequest("GET", "/bar?name=kimbs", nil)
+func TestFooPathHandler_WithoutJson(t *testing.T) {
+	assert := assert.New(t)
+	res := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/foo", nil)
 
-// 	mux := NewHttpHandler()
-// 	mux.ServeHTTP(res, req)
-// 	// barHandler(res, req)
-// 	assert.Equal(http.StatusOK, res.Code)
+	mux := NewHttpHandler()
+	mux.ServeHTTP(res, req)
+	assert.Equal(http.StatusBadRequest, res.Code)
 
-// 	data, _ := ioutil.ReadAll(res.Body)
-// 	assert.Equal("Hello name: kimbs!", string(data))
+	// data, _ := ioutil.ReadAll(res.Body)
+	// assert.Equal("Hello name: kimbs!", string(data))
 
-// }
+}
+
+func TestFooPathHandler_WithJson(t *testing.T) {
+	assert := assert.New(t)
+	res := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/foo",
+		strings.NewReader(`{"first_name":"bs","last_name":"kim","email":"kimbs@kimbs.com"}`))
+
+	mux := NewHttpHandler()
+	mux.ServeHTTP(res, req)
+	assert.Equal(http.StatusCreated, res.Code)
+
+	user := new(User)
+	err := json.NewDecoder(res.Body).Decode(user)
+	assert.Nil(err)
+	assert.Equal("bs", user.FirstName)
+	assert.Equal("kim", user.LastName)
+}
