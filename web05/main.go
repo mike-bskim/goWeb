@@ -1,7 +1,6 @@
 package main
 
 import (
-	// "GO/tuckersGo/goWeb/web05/myapp"
 	"GO/tuckersGo/goWeb/web05/myapp"
 	"net/http"
 )

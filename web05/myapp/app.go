@@ -4,6 +4,7 @@ package myapp
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -27,8 +28,19 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func usersHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "Get UserInfo by /users/{id}")
-	// Get UserInfo by /users/{id}
+	if len(userMap) == 0 {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, "No Users")
+		return
+	}
+	users := []*User{}
+	for _, u := range userMap {
+		users = append(users, u)
+	}
+	data, _ := json.Marshal(users)
+	w.Header().Add("content-type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprint(w, string(data))
 }
 
 func createUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -45,6 +57,7 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 	user.Id = lastId
 	user.CreatedAt = time.Now()
 	userMap[user.Id] = user
+	log.Println("createUserHandler:", *userMap[user.Id])
 
 	w.Header().Add("content-type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -54,7 +67,6 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 
 func getUserInfoHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	// fmt.Fprint(w, "User ID:", vars["id"])
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -62,19 +74,71 @@ func getUserInfoHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// user := new(User)
-	// user.Id = id
-	// user.FirstName = "bs"
-	// user.LastName = "kim"
-	// user.Email = "kimbs@kimbs.com"
-
 	user, ok := userMap[id]
 	if !ok {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, "No User ID:", id)
+		log.Println("getUserInfoHandler:", userMap[id])
 		return
 	}
 
+	w.Header().Add("content-type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	data, _ := json.Marshal(user)
+	fmt.Fprint(w, string(data))
+}
+
+// delete a user
+func deleteUserHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, err)
+		return
+	}
+
+	_, ok := userMap[id]
+	if !ok {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, "No User ID:", id)
+		log.Println("user.Id:", id)
+		return
+	}
+
+	delete(userMap, id)
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprint(w, "Deleted User ID:", id)
+
+}
+
+func updateUserHandler(w http.ResponseWriter, r *http.Request) {
+
+	updateUser := new(User)
+	err := json.NewDecoder(r.Body).Decode(updateUser)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		log.Println("http.StatusBadRequest:", http.StatusBadRequest)
+		fmt.Fprint(w, err)
+		return
+	}
+	user, ok := userMap[updateUser.Id]
+	if !ok {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, "No User ID:", updateUser.Id)
+		return
+	}
+	if updateUser.FirstName != "" {
+		user.FirstName = updateUser.FirstName
+	}
+	if updateUser.LastName != "" {
+		user.LastName = updateUser.LastName
+	}
+	if updateUser.Email != "" {
+		user.Email = updateUser.Email
+	}
+
+	userMap[updateUser.Id] = user
 	w.Header().Add("content-type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	data, _ := json.Marshal(user)
@@ -91,8 +155,9 @@ func NewHttpHandler() http.Handler {
 	mux.HandleFunc("/", indexHandler)
 	mux.HandleFunc("/users", usersHandler).Methods("GET")
 	mux.HandleFunc("/users", createUserHandler).Methods("POST")
-	mux.HandleFunc("/users/{id:[0-9]+}", getUserInfoHandler)
-	// mux.Handle("/foo", &fooHandler{})
+	mux.HandleFunc("/users", updateUserHandler).Methods("PUT")
+	mux.HandleFunc("/users/{id:[0-9]+}", getUserInfoHandler).Methods("GET")
+	mux.HandleFunc("/users/{id:[0-9]+}", deleteUserHandler).Methods("DELETE")
 
 	return mux
 }
