@@ -20,12 +20,15 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/pat"
+	"github.com/unrolled/render"
+	"github.com/urfave/negroni"
 )
+
+var rd *render.Render
 
 type User struct {
 	Name     string    `json:"name"`
@@ -37,25 +40,42 @@ func getUserInfoHandler(w http.ResponseWriter, r *http.Request) {
 	user := User{Name: "kimbs", Email: "kimbs@kimbs.com"}
 	user.CreateAt = time.Now()
 
-	w.Header().Add("Content-type", "application/json:")
-	w.WriteHeader(http.StatusOK)
-	data, _ := json.Marshal(user)
-	fmt.Fprint(w, string(data))
+	// w.Header().Add("Content-type", "application/json:")
+	// w.WriteHeader(http.StatusOK)
+	// data, _ := json.Marshal(user)
+	// fmt.Fprint(w, string(data))
+	rd.JSON(w, http.StatusOK, user) // 위의 4줄이 처리됨
 }
 
 func addUserHandler(w http.ResponseWriter, r *http.Request) {
 	user := new(User)
 	err := json.NewDecoder(r.Body).Decode(user)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, err)
+		// w.WriteHeader(http.StatusBadRequest)
+		// fmt.Fprint(w, err)
+		rd.Text(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	user.CreateAt = time.Now()
-	w.Header().Add("Content-type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	data, _ := json.Marshal(user)
-	fmt.Fprint(w, string(data))
+	// w.Header().Add("Content-type", "application/json")
+	// w.WriteHeader(http.StatusOK)
+	// data, _ := json.Marshal(user)
+	// fmt.Fprint(w, string(data))
+	rd.JSON(w, http.StatusOK, user) // 위의 4줄이 처리됨
+}
+
+func helloHandler(w http.ResponseWriter, r *http.Request) {
+	// tmpl, err := template.New("Hello").ParseFiles("templates/hello.tmpl")
+	// if err != nil {
+	// 	// w.WriteHeader(http.StatusInternalServerError)
+	// 	// fmt.Fprint(w, err)
+	// 	rd.Text(w, http.StatusBadRequest, err.Error())
+	// 	return
+	// }
+	// tmpl.ExecuteTemplate(w, "hello.tmpl", "Kimbs")
+	user := User{Name: "kimbs", Email: "kimbs@kimbs.com"}
+
+	rd.HTML(w, http.StatusOK, "body", user)
 }
 
 func main() {
@@ -64,9 +84,18 @@ func main() {
 	// mux.HandleFunc("/users", getUserInfoHandler).Methods("GET") 	// gorila mux 인 경우
 	// mux.HandleFunc("/users", addUserHandler).Methods("PUT") 		// gorila mux 인 경우
 
+	rd = render.New(render.Options{
+		Directory:  "template",
+		Extensions: []string{".html", ".tmpl"},
+		Layout:     "hello",
+	})
 	mux := pat.New() // gorila pat
 	mux.Get("/users", getUserInfoHandler)
 	mux.Post("/users", addUserHandler)
+	mux.Get("/hello", helloHandler)
 
-	http.ListenAndServe(":3000", mux)
+	ng := negroni.Classic()
+	ng.UseHandler(mux)
+
+	http.ListenAndServe(":3000", ng)
 }
