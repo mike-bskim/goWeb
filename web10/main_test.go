@@ -50,17 +50,4 @@ func TestDecoHandler(t *testing.T) {
 	line, _, err = r.ReadLine()
 	assert.NoError(err)
 	assert.Contains(string(line), "[LOGGER1] Complete")
-
-	// 	line, _, err = r.ReadLine()
-	// 	assert.NoError(err)
-	// 	assert.Contains(string(line), "[LOGGER1] Started")
-
-	// 	line, _, err = r.ReadLine()
-	// 	assert.NoError(err)
-	// 	assert.Contains(string(line), "[LOGGER1] Completed")
-
-	// 	line, _, err = r.ReadLine()
-	// 	assert.NoError(err)
-	// 	assert.Contains(string(line), "[LOGGER2] Completed")
-
 }
