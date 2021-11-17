@@ -12,6 +12,8 @@ const portNumber = ":3000"
 
 func main() {
 	mux := myapp.MakeNewHandler()
+	defer mux.Close()
+
 	ng := negroni.Classic()
 	ng.UseHandler(mux)
 

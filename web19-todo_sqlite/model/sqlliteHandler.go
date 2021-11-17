@@ -10,27 +10,27 @@ type sqliteHandler struct {
 	db *sql.DB
 }
 
-func (s *sqliteHandler) close() {
+func (s *sqliteHandler) GetTodos() []*Todo {
+	return nil
+}
+
+func (s *sqliteHandler) AddTodo(name string) *Todo {
+	return nil
+}
+
+func (s *sqliteHandler) RemoveTodo(id int) bool {
+	return false
+}
+
+func (s *sqliteHandler) CompleteTodo(id int, complete bool) bool {
+	return false
+}
+
+func (s *sqliteHandler) Close() {
 	s.db.Close()
 }
 
-func (s *sqliteHandler) getTodos() []*Todo {
-	return nil
-}
-
-func (s *sqliteHandler) addTodo(name string) *Todo {
-	return nil
-}
-
-func (s *sqliteHandler) removeTodo(id int) bool {
-	return false
-}
-
-func (s *sqliteHandler) completeTodo(id int, complete bool) bool {
-	return false
-}
-
-func newSqliteHandler() dbHandler {
+func newSqliteHandler() DBHandler {
 	database, err := sql.Open("sqlite3", "./test.db")
 	if err != nil {
 		panic(err)

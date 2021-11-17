@@ -11,35 +11,22 @@ type Todo struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-type dbHandler interface {
+// 인터페이스 외부로 공개를 해야함, close 함수의 권한을 main.go 에 넘겨주기위해서
+// 인터페이스 이름 및 내부 함수들을 대문자로변경, 외부에 공개
+type DBHandler interface {
 	// private 처리함
-	getTodos() []*Todo
-	addTodo(name string) *Todo
-	removeTodo(id int) bool
-	completeTodo(id int, complete bool) bool
+	GetTodos() []*Todo
+	AddTodo(name string) *Todo
+	RemoveTodo(id int) bool
+	CompleteTodo(id int, complete bool) bool
+	Close()
 }
 
-var handler dbHandler
-
-func init() {
+// init -> NewDBHandler
+func NewDBHandler() DBHandler {
 	// model.TodoMap = make(map[int]*model.Todo)
 	// handler = newMemoryHandler()
 	// sqlite hanlder 만들면 아래처럼 변경만 하면 됨.
-	handler = newSqliteHandler()
-}
-
-func GetTodos() []*Todo {
-	return handler.getTodos()
-}
-
-func AddTodo(name string) *Todo {
-	return handler.addTodo(name)
-}
-
-func RemoveTodo(id int) bool {
-	return handler.removeTodo(id)
-}
-
-func CompleteTodo(id int, complete bool) bool {
-	return handler.completeTodo(id, complete)
+	// handler = newSqliteHandler()
+	return newMemoryHandler()
 }
