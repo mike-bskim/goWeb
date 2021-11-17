@@ -23,9 +23,9 @@ var handler dbHandler
 
 func init() {
 	// model.TodoMap = make(map[int]*model.Todo)
-	handler = newMemoryHandler()
+	// handler = newMemoryHandler()
 	// sqlite hanlder 만들면 아래처럼 변경만 하면 됨.
-	// handler = newSqliteHandler()
+	handler = newSqliteHandler()
 }
 
 func GetTodos() []*Todo {

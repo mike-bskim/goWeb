@@ -1,7 +1,7 @@
 package main
 
 import (
-	"GO/tuckersGo/goWeb/web16-todo/myapp"
+	"GO/tuckersGo/goWeb/web18-todo_sqlite/myapp"
 	"log"
 	"net/http"
 
