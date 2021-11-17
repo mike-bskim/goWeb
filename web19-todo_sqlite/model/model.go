@@ -1,7 +1,6 @@
 package model
 
 import (
-	"log"
 	"time"
 )
 
@@ -20,56 +19,13 @@ type dbHandler interface {
 	completeTodo(id int, complete bool) bool
 }
 
-type memoryHandler struct {
-	todoMap map[int]*Todo
-}
-
-func (m *memoryHandler) getTodos() []*Todo {
-	list := []*Todo{}
-	for _, v := range m.todoMap {
-		list = append(list, v)
-	}
-	return list
-}
-
-func (m *memoryHandler) addTodo(name string) *Todo {
-	id := len(m.todoMap) + 1
-	todo := &Todo{id, name, false, time.Now()}
-	m.todoMap[id] = todo
-	log.Println("add Todo success")
-	// for i := 1; i < len(model.TodoMap)+1; i++ {
-	// 	log.Println("app.go / addTodoHandler >", model.TodoMap[i])
-	// }
-	return todo
-}
-
-func (m *memoryHandler) removeTodo(id int) bool {
-	if _, ok := m.todoMap[id]; ok {
-		delete(m.todoMap, id)
-		return true
-	}
-	return false
-}
-
-func (m *memoryHandler) completeTodo(id int, complete bool) bool {
-	if todo, ok := m.todoMap[id]; ok {
-		todo.Completed = complete
-		return true
-	}
-	return false
-}
-
-func newMemoryHandler() dbHandler {
-	m := &memoryHandler{}
-	m.todoMap = make(map[int]*Todo)
-	return m
-}
-
 var handler dbHandler
 
 func init() {
 	// model.TodoMap = make(map[int]*model.Todo)
 	handler = newMemoryHandler()
+	// sqlite hanlder 만들면 아래처럼 변경만 하면 됨.
+	// handler = newSqliteHandler()
 }
 
 func GetTodos() []*Todo {
