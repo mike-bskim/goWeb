@@ -69,12 +69,12 @@ func (a *AppHandler) Close() {
 }
 
 // 리턴변경 http.Handler -> AppHandler
-func MakeNewHandler() *AppHandler {
+func MakeNewHandler(filepath string) *AppHandler {
 
 	mux := mux.NewRouter()
 	a := &AppHandler{
 		Handler: mux,
-		db:      model.NewDBHandler(),
+		db:      model.NewDBHandler(filepath),
 	}
 	mux.HandleFunc("/", a.indexHandler)
 	mux.HandleFunc("/todos", a.getTodoListHandler).Methods("GET")

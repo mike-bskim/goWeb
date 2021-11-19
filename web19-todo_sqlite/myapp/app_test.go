@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strconv"
 	"testing"
 
@@ -14,8 +15,12 @@ import (
 )
 
 func TestTodos(t *testing.T) {
+	os.Remove("./test.db")
 	assert := assert.New(t)
-	ts := httptest.NewServer(MakeNewHandler())
+	appH := MakeNewHandler()
+	defer appH.Close()
+
+	ts := httptest.NewServer(appH)
 	defer ts.Close()
 
 	// add testing - first data
@@ -50,7 +55,7 @@ func TestTodos(t *testing.T) {
 	todos := []*model.Todo{}
 	err = json.NewDecoder(resp.Body).Decode(&todos)
 	assert.NoError(err)
-	assert.Equal(len(todos), 2)
+	assert.Equal(2, len(todos))
 	for i := 0; i < len(todos); i++ {
 		log.Println("after getting whole data >", *todos[i])
 	}
@@ -67,7 +72,7 @@ func TestTodos(t *testing.T) {
 	// todos := []*Todo{}
 	err = json.NewDecoder(resp.Body).Decode(&todos)
 	assert.NoError(err)
-	assert.Equal(len(todos), 2)
+	assert.Equal(2, len(todos))
 	for i := 0; i < len(todos); i++ {
 		log.Println("after complete for >", *todos[i])
 	}
@@ -86,7 +91,7 @@ func TestTodos(t *testing.T) {
 	// todos := []*Todo{}
 	err = json.NewDecoder(resp.Body).Decode(&todos)
 	assert.NoError(err)
-	assert.Equal(len(todos), 1)
+	assert.Equal(1, len(todos))
 	for i := 0; i < len(todos); i++ {
 		log.Println("after delete for >", *todos[i])
 	}

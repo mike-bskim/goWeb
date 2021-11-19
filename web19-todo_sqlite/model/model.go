@@ -23,10 +23,9 @@ type DBHandler interface {
 }
 
 // init -> NewDBHandler
-func NewDBHandler() DBHandler {
-	// model.TodoMap = make(map[int]*model.Todo)
-	// handler = newMemoryHandler()
+func NewDBHandler(filepath string) DBHandler {
+	// handler := newMemoryHandler()
 	// sqlite hanlder 만들면 아래처럼 변경만 하면 됨.
-	// handler = newSqliteHandler()
-	return newMemoryHandler()
+	// handler := newSqliteHandler()
+	return newSqliteHandler(filepath)
 }
