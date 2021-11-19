@@ -24,8 +24,7 @@ type DBHandler interface {
 
 // init -> NewDBHandler
 func NewDBHandler(filepath string) DBHandler {
-	// handler := newMemoryHandler()
-	// sqlite hanlder 만들면 아래처럼 변경만 하면 됨.
-	// handler := newSqliteHandler()
-	return newSqliteHandler(filepath)
+	// handler := newMemoryHandler() // map 인 경우
+	handler := newSqliteHandler(filepath) // sqlite 인 경우
+	return handler
 }
