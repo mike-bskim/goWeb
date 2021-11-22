@@ -1,14 +1,21 @@
 package myapp
 
 import (
+	// "GO/tuckersGo/goWeb/web21-todo_login/model"
 	"GO/tuckersGo/goWeb/web21-todo_login/model"
+	"log"
 	"net/http"
+	"os"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
 	"github.com/unrolled/render"
+	"github.com/urfave/negroni"
 )
 
+var store = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
 var rd *render.Render = render.New()
 
 // 인터페이스 외부로 공개를 해야함, close 함수의 권한을 main.go 에 넘겨주기위해서
@@ -19,6 +26,20 @@ type AppHandler struct {
 	// 이름을 암시적으로 생략함. handler 생략함.
 	http.Handler
 	db model.DBHandler
+}
+
+func getSessionID(r *http.Request) string {
+	session, err := store.Get(r, "session")
+	if err != nil {
+		log.Println(err.Error())
+		return ""
+	}
+	// Set some session values.
+	val := session.Values["id"]
+	if val == nil {
+		return ""
+	}
+	return val.(string)
 }
 
 func (a *AppHandler) indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -68,12 +89,35 @@ func (a *AppHandler) Close() {
 	a.db.Close()
 }
 
+func CheckSignin(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+	// if request RRL is /singin.html, then next()
+	if strings.Contains(r.URL.Path, "/signin.html") || strings.Contains(r.URL.Path, "/auth") {
+		next(rw, r)
+		return
+	}
+
+	// if user already signed in
+	sessionID := getSessionID(r)
+	if sessionID != "" {
+		next(rw, r)
+		return
+	}
+	// if not user sign in
+	// redirect signin.html
+	http.Redirect(rw, r, "/signin.html", http.StatusTemporaryRedirect)
+}
+
 // 리턴변경 http.Handler -> AppHandler
 func MakeNewHandler(filepath string) *AppHandler {
 
 	mux := mux.NewRouter()
+	// Classic() *Negroni => return New(NewRecovery(), NewLogger(), NewStatic(http.Dir("public")))
+	// ng := negroni.Classic()
+	ng := negroni.New(negroni.NewRecovery(), negroni.NewLogger(), negroni.HandlerFunc(CheckSignin), negroni.NewStatic(http.Dir("public")))
+	ng.UseHandler(mux)
+
 	a := &AppHandler{
-		Handler: mux,
+		Handler: ng, // mux->ng
 		db:      model.NewDBHandler(filepath),
 	}
 	mux.HandleFunc("/", a.indexHandler)
@@ -81,5 +125,8 @@ func MakeNewHandler(filepath string) *AppHandler {
 	mux.HandleFunc("/todos", a.addTodoHandler).Methods("POST")
 	mux.HandleFunc("/todos/{id:[0-9]+}", a.removeTodoHandler).Methods("DELETE")
 	mux.HandleFunc("/complete-todo/{id:[0-9]+}", a.completeTodoHandler).Methods("GET")
+	mux.HandleFunc("/auth/google/login", googleLoginHandler)
+	mux.HandleFunc("/auth/google/callback", googleAuthCallback)
+
 	return a
 }

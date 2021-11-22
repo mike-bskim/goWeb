@@ -1,11 +1,9 @@
 package main
 
 import (
-	"GO/tuckersGo/goWeb/web18-todo_sqlite/myapp"
+	"GO/tuckersGo/goWeb/web21-todo_login/myapp"
 	"log"
 	"net/http"
-
-	"github.com/urfave/negroni"
 )
 
 const portNumber = ":3000"
@@ -14,11 +12,11 @@ func main() {
 	mux := myapp.MakeNewHandler("./todo.db")
 	defer mux.Close()
 
-	ng := negroni.Classic()
-	ng.UseHandler(mux)
+	// ng := negroni.Classic()
+	// ng.UseHandler(mux)
 
 	log.Println("Started App")
-	err := http.ListenAndServe(portNumber, ng)
+	err := http.ListenAndServe(portNumber, mux)
 	if err != nil {
 		panic(err)
 	}

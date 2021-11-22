@@ -2,12 +2,13 @@
 https://www.youtube.com/watch?v=BOS73W7s7nU&list=PLy-g2fnSzUTDALoERcKDniql16SAaQYHF&index=15
 */
 
-package main
+package myapp
 
 import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -15,13 +16,16 @@ import (
 	"os"
 	"time"
 
-	"github.com/gorilla/pat"
-	"github.com/urfave/negroni"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
 
-const portNumber = ":3000"
+type GoogleUserId struct {
+	ID            string `json:"id"`
+	Email         string `json:"email"`
+	VerifiedEmail bool   `json:"verified_email"`
+	Picture       string `json:"picture"`
+}
 
 var googleOauthConfig = oauth2.Config{
 	RedirectURL:  "http://localhost:3000/auth/google/callback",
@@ -54,19 +58,49 @@ func googleAuthCallback(w http.ResponseWriter, r *http.Request) {
 
 	// 쿠키값과 폼데이터의 state 가 같은지 비교
 	if r.FormValue("state") != oauthstate.Value {
-		log.Printf("invalid google oauth state cookie:%s state:%s\n", oauthstate.Value, r.FormValue("state"))
-		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+		errMsg := fmt.Sprintf("invalid google oauth state cookie:%s state:%s\n", oauthstate.Value, r.FormValue("state"))
+		log.Println(errMsg)
+		http.Error(w, errMsg, http.StatusInternalServerError)
+		// http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
 	}
 
 	data, err := getGoogleUserInfo(r.FormValue("code"))
 	if err != nil {
 		log.Println(err.Error())
-		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		// http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
 	}
 
-	fmt.Fprint(w, string(data))
+	// store ID info into SEssion cookie
+	var userInfo GoogleUserId
+	err = json.Unmarshal(data, &userInfo)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		// http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+		return
+	}
+
+	session, err := store.Get(r, "session")
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	// Set some session values.
+	session.Values["id"] = userInfo.ID
+	// Save it before we write to the response/return from the handler.
+	err = session.Save(r, w)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+	// fmt.Fprint(w, string(data))
 }
 
 const oauthGoogleUrlAPI = "https://www.googleapis.com/oauth2/v2/userinfo?access_token="
@@ -86,16 +120,16 @@ func getGoogleUserInfo(code string) ([]byte, error) {
 	return ioutil.ReadAll(resp.Body)
 }
 
-func main() {
-	// 환경변수 설정후, 재부팅해야 값들이 정상적으로 읽혀짐
-	log.Println("config", os.Getenv("GOOGLE_CLIENT_ID"))
-	log.Println("config", os.Getenv("GOOGLE_SECRET_KEY"))
+// func main() {
+// 	// 환경변수 설정후, 재부팅해야 값들이 정상적으로 읽혀짐
+// 	log.Println("config", os.Getenv("GOOGLE_CLIENT_ID"))
+// 	log.Println("config", os.Getenv("GOOGLE_SECRET_KEY"))
 
-	mux := pat.New()
-	mux.HandleFunc("/auth/google/login", googleLoginHandler)
-	mux.HandleFunc("/auth/google/callback", googleAuthCallback)
+// 	mux := pat.New()
+// 	mux.HandleFunc("/auth/google/login", googleLoginHandler)
+// 	mux.HandleFunc("/auth/google/callback", googleAuthCallback)
 
-	ng := negroni.Classic()
-	ng.UseHandler(mux)
-	http.ListenAndServe(portNumber, ng)
-}
+// 	ng := negroni.Classic()
+// 	ng.UseHandler(mux)
+// 	http.ListenAndServe(portNumber, ng)
+// }
