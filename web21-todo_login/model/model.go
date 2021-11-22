@@ -15,8 +15,8 @@ type Todo struct {
 // 인터페이스 이름 및 내부 함수들을 대문자로변경, 외부에 공개
 type DBHandler interface {
 	// private 처리함
-	GetTodos() []*Todo
-	AddTodo(name string) *Todo
+	GetTodos(sessionId string) []*Todo
+	AddTodo(name, sessionId string) *Todo
 	RemoveTodo(id int) bool
 	CompleteTodo(id int, complete bool) bool
 	Close()

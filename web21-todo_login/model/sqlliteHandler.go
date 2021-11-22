@@ -11,10 +11,10 @@ type sqliteHandler struct {
 	db *sql.DB
 }
 
-func (s *sqliteHandler) GetTodos() []*Todo {
+func (s *sqliteHandler) GetTodos(sessionId string) []*Todo {
 	todos := []*Todo{}
-	sql_string := "SELECT id, name, completed, createdAt From todos"
-	rows, err := s.db.Query(sql_string)
+	sql_string := "SELECT id, name, completed, createdAt From todos WHERE sessionId = ?"
+	rows, err := s.db.Query(sql_string, sessionId)
 	if err != nil {
 		panic(err)
 	}
@@ -28,14 +28,14 @@ func (s *sqliteHandler) GetTodos() []*Todo {
 	return todos
 }
 
-func (s *sqliteHandler) AddTodo(name string) *Todo {
-	sql_string := "INSERT INTO todos (name, completed, createdAt) VALUES(?,?,datetime('now'))"
+func (s *sqliteHandler) AddTodo(name, sessionId string) *Todo {
+	sql_string := "INSERT INTO todos (sessionId, name, completed, createdAt) VALUES(?,?,?,datetime('now'))"
 	stmt, err := s.db.Prepare(sql_string)
 	if err != nil {
 		panic(err)
 	}
 
-	result, err := stmt.Exec(name, false)
+	result, err := stmt.Exec(sessionId, name, false)
 	if err != nil {
 		panic(err)
 	}
@@ -94,10 +94,12 @@ func newSqliteHandler(filepath string) DBHandler {
 	statement, _ := database.Prepare(
 		`CREATE TABLE IF NOT EXISTS todos (
 			id        INTEGER  PRIMARY KEY AUTOINCREMENT,
+			sessionId STRING,
 			name      TEXT,
 			completed BOOLEAN,
 			createdAt DATETIME
-		)`)
+		);
+		CREATE INDEX IF NOT EXISTS sessionIdIndexOnTodos ON todos(sessionId ASC);`)
 	statement.Exec()
 	return &sqliteHandler{db: database}
 	// return &sqliteHandler{}
